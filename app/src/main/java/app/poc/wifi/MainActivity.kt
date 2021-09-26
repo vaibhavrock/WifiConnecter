@@ -14,7 +14,6 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.wifi.*
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -24,6 +23,7 @@ import android.view.Window
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.cardview.widget.CardView
@@ -32,16 +32,11 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.net.wifi.WifiConfiguration
-
-import android.R.string.no
 
 
+class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
 
-
-class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
-
-    lateinit  var context :Context
+    lateinit var context: Context
     var wifiManager: WifiManager? = null
     private val REQUESTED_PERMISSIONS = arrayOf<String>(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -51,9 +46,9 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
         Manifest.permission.CHANGE_NETWORK_STATE,
         Manifest.permission.WRITE_SETTINGS
     )
- /*   val executors = AppExecutors()
-    var scanResultSelected: ScanResult? = null
-    var selectedSSID = "NETWORK"*/
+    /*   val executors = AppExecutors()
+       var scanResultSelected: ScanResult? = null
+       var selectedSSID = "NETWORK"*/
 
     lateinit var rvWifiList: RecyclerView
     lateinit var progressBar: ProgressBar
@@ -134,15 +129,15 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
 
 
     override fun onNetworkClick(data: ScanResult) {
-        if(Common.checkWifiType(data.capabilities) != "OPEN"){
+        if (Common.checkWifiType(data.capabilities) != "OPEN") {
             showDialog(data)
-        }
-        else{
+        } else {
             connectWifi(data, "")
         }
 
 
     }
+
     private fun showDialog(scanResult: ScanResult) {
         val dialog = Dialog(context)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -183,10 +178,12 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun codeForAndroid11andMore(data: ScanResult,
-                                        wifiSSID: String,
-                                        wifiPassword: String,
-                                        capabilities: String) {
+    private fun codeForAndroid11andMore(
+        data: ScanResult,
+        wifiSSID: String,
+        wifiPassword: String,
+        capabilities: String
+    ) {
         val suggestion2 = WifiNetworkSuggestion.Builder()
             .setSsid(data.SSID) // SSID of network
             .setWpa2Passphrase(wifiPassword) // password is network is not open
@@ -213,20 +210,19 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
                 val isEnabled = wifiManager.enableNetwork(i.networkId, true)
                 val isReconnected = wifiManager.reconnect()
                 break
-            }
-            else{
+            } else {
                 wifiManager.removeNetwork(i.networkId)
                 wifiManager.saveConfiguration()
             }
         }
 
         val status = wifiManager.addNetworkSuggestions(suggestionsList);
-        Log.e("NETWORK", "Status:"+status)
+        Log.e("NETWORK", "Status:" + status)
 
-        if(status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS){
+        if (status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
             // already connected with another network
             val status1 = wifiManager.removeNetworkSuggestions(suggestionsList)
-            Log.e("NETWORK", "Remove:"+status1)
+            Log.e("NETWORK", "Remove:" + status1)
         }
 
         if (status != WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
@@ -244,7 +240,11 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
                 Log.e("NETWORK", "broadcastReceiver")
 
                 if (!intent.action.equals(WifiManager.ACTION_WIFI_NETWORK_SUGGESTION_POST_CONNECTION)) {
-                    Toast.makeText(context, "Post connection broadcastReceiver:"+intent, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Post connection broadcastReceiver:" + intent,
+                        Toast.LENGTH_SHORT
+                    ).show()
 
                     return;
                 }
@@ -303,7 +303,8 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
             Log.e("NETWORK", "Configuring OPEN network")
             conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
         }
-        val wifiManager = this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val wifiManager =
+            this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val networkId = wifiManager.addNetwork(conf)
         Log.e("NETWORK", "Add result $networkId")
 
@@ -332,13 +333,16 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
         gotoNextScreen(scanResult, wifiManager)
     }
 
-    private fun android10andMoreVersions( scanResult: ScanResult,
-                                           wifiSSID: String,
-                                           wifiPassword: String,
-                                           capabilities: String){
+    private fun android10andMoreVersions(
+        scanResult: ScanResult,
+        wifiSSID: String,
+        wifiPassword: String,
+        capabilities: String
+    ) {
         // Android 10 (API level 29) -- Android Q (Android 10)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val wifiManager = this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val wifiManager =
+                this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
             val wifiNetworkSpecifier = WifiNetworkSpecifier.Builder()
                 .setSsid(wifiSSID)
@@ -353,25 +357,26 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
                 //.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
                 .setNetworkSpecifier(wifiNetworkSpecifier)
                 .build()
-            val connectivityManager = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager =
+                this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
 
             val networkCallback = object : ConnectivityManager.NetworkCallback() {
-               /* override fun onAvailable(network: Network) {
-                    Log.d("NETWORK", "Network available")
-                    // To make sure that requests don't go over mobile data
-                    connectivityManager.bindProcessToNetwork(network)
-                    //unregister network callback
-                    //connectivityManager.unregisterNetworkCallback(this)
-                    gotoNextScreen(scanResult, wifiManager)
+                /* override fun onAvailable(network: Network) {
+                     Log.d("NETWORK", "Network available")
+                     // To make sure that requests don't go over mobile data
+                     connectivityManager.bindProcessToNetwork(network)
+                     //unregister network callback
+                     //connectivityManager.unregisterNetworkCallback(this)
+                     gotoNextScreen(scanResult, wifiManager)
+ 
+                     super.onAvailable(network)
+                 }*/
 
-                    super.onAvailable(network)
-                }*/
-
-              /*  override fun onUnavailable() {
-                    Log.d("NETWORK", "Network unavailable")
-                    Toast.makeText(this@MainActivity, "Network unavailable!", Toast.LENGTH_SHORT).show()
-                }*/
+                /*  override fun onUnavailable() {
+                      Log.d("NETWORK", "Network unavailable")
+                      Toast.makeText(this@MainActivity, "Network unavailable!", Toast.LENGTH_SHORT).show()
+                  }*/
 
                 override fun onAvailable(network: Network) {
                     Log.d("NETWORK", "Network available")
@@ -517,6 +522,7 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
                                 Log.e("NETWORK", "Thread onLosing...........................")
 
                             }
+
                             override fun onAvailable(network: Network) {
                                 super.onAvailable(network)
                                 Log.e("NETWORK", "Thread onAvailable...........................")
@@ -534,7 +540,8 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
                                     connectivityManager.bindProcessToNetwork(null as Network?)
                                 } else if (Build.VERSION.SDK_INT >= 21) {
                                     ConnectivityManager.setProcessDefaultNetwork(null as Network?)
-                                }    }
+                                }
+                            }
 
                             override fun onLost(network: Network) {
                                 super.onLost(network)
@@ -554,8 +561,8 @@ class MainActivity : AppCompatActivity() , WifiListAdapter.AdapterCallback{
     }
 
     private fun gotoNextScreen(connectedWifi: ScanResult, wifiManager: WifiManager) {
-        Log.e("check", "wifi:"+wifiManager.connectionInfo)
-        Log.e("check", "connection:"+connectedWifi.SSID)
+        Log.e("check", "wifi:" + wifiManager.connectionInfo)
+        Log.e("check", "connection:" + connectedWifi.SSID)
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(
                 Intent(this, WebViewActivity::class.java).putExtra(
