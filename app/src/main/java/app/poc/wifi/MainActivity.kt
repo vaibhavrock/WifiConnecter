@@ -195,36 +195,6 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
         val wifiManager =
             applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        val list = wifiManager.configuredNetworks
-        for (i in list) {
-            if (i.SSID != null && i.SSID == "\"" + wifiSSID + "\"") {
-                val isDisconnected = wifiManager.disconnect()
-                val isEnabled = wifiManager.enableNetwork(i.networkId, true)
-                val isReconnected = wifiManager.reconnect()
-                break
-            } else {
-                wifiManager.removeNetwork(i.networkId)
-                wifiManager.saveConfiguration()
-            }
-        }
-
-        val status = wifiManager.addNetworkSuggestions(suggestionsList);
-        Log.e("NETWORK", "Status:" + status)
-
-        if (status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
-            // already connected with another network
-            val status1 = wifiManager.removeNetworkSuggestions(suggestionsList)
-            Log.e("NETWORK", "Remove:" + status1)
-        }
-
         if (status != WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
             // do error handling here
             Log.e("NETWORK", "Error")
