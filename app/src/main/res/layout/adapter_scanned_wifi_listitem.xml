@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingLeft="16dp">
+
+        <ImageView
+            android:id="@+id/ivSignalStrength"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginTop="12dp"
+            app:srcCompat="@android:drawable/ic_menu_info_details" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginLeft="8dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/ivOptionsMenu"
+                    android:layout_width="20dp"
+                    android:layout_height="16dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:scaleType="fitCenter"
+                    app:srcCompat="@android:drawable/ic_menu_info_details" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_marginRight="4dp"
+                    android:layout_toStartOf="@+id/ivOptionsMenu"
+                    android:layout_toLeftOf="@+id/ivOptionsMenu"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvWifiName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:lineSpacingExtra="3sp"
+                        android:maxLines="1"
+                        android:text=""
+                        android:textColor="@color/purple_200"
+                        android:textSize="14sp"
+                       />
+
+                    <TextView
+                        android:id="@+id/tvWifiNameSecondary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:lineSpacingExtra="3sp"
+                        android:maxLines="1"
+                        android:textColor="@color/black"
+                        android:textSize="10sp"
+                        />
+                </LinearLayout>
+            </RelativeLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_marginTop="12dp"
+        android:background="@color/white" />
+</LinearLayout>
