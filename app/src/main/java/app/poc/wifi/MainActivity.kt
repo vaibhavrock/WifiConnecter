@@ -165,11 +165,12 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
                 // Android 10 (API level 29) -- Android Q
-                android10SpecifiedWithOldCode(data, data.SSID, password, data.capabilities)
+                //modifiedCodeForTargeted29(data, data.SSID, password, data.capabilities)
+                android10andMoreVersionsWithoutOuterInternet(data, data.SSID, password, data.capabilities)
             } else {
                 // Android 11 (API level 30) -- Android R and more
-                codeForAndroid11andMore(data, data.SSID, password, data.capabilities)
-                //android10andMoreVersions(data, data.SSID, password, data.capabilities)
+                //newCodeForAndroid11andMore(data, data.SSID, password, data.capabilities)
+                android10andMoreVersionsWithoutOuterInternet(data, data.SSID, password, data.capabilities)
             }
         } else {
             // Android 9 (API level 28) -- Android P and lower
@@ -178,7 +179,7 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun codeForAndroid11andMore(
+    private fun newCodeForAndroid11andMore(
         data: ScanResult,
         wifiSSID: String,
         wifiPassword: String,
@@ -194,6 +195,36 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
 
         val wifiManager =
             applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val list = wifiManager.configuredNetworks
+        for (i in list) {
+            if (i.SSID != null && i.SSID == "\"" + wifiSSID + "\"") {
+                val isDisconnected = wifiManager.disconnect()
+                val isEnabled = wifiManager.enableNetwork(i.networkId, true)
+                val isReconnected = wifiManager.reconnect()
+                break
+            } else {
+                wifiManager.removeNetwork(i.networkId)
+                wifiManager.saveConfiguration()
+            }
+        }
+
+        val status = wifiManager.addNetworkSuggestions(suggestionsList);
+        Log.e("NETWORK", "Status:" + status)
+
+        if (status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
+            // already connected with another network
+            val status1 = wifiManager.removeNetworkSuggestions(suggestionsList)
+            Log.e("NETWORK", "Remove:" + status1)
+        }
 
         if (status != WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
             // do error handling here
@@ -228,82 +259,7 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
         //android10andMoreVersions(data, data.SSID, wifiPassword, data.capabilities)
     }
 
-    private fun android9AndPreviousVersion(
-        scanResult: ScanResult,
-        wifiSSID: String,
-        wifiPassword: String,
-        capabilities: String
-    ) {
-        val conf = WifiConfiguration()
-        conf.SSID =
-            "\"" + wifiSSID + "\"" // Please note the quotes. String should contain ssid in quotes
-        conf.status = WifiConfiguration.Status.ENABLED
-        conf.priority = 40
-
-        if (Common.checkWifiType(capabilities) == "WEP") {
-            Log.e("NETWORK", "Configuring WEP")
-            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
-            conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN)
-            conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA)
-            conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN)
-            conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED)
-            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
-            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
-            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
-            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
-            if (wifiPassword.matches(Regex("^[0-9a-fA-F]+$"))) {
-                conf.wepKeys[0] = wifiPassword
-            } else {
-                conf.wepKeys[0] = "\"" + wifiPassword + "\""
-            }
-            conf.wepTxKeyIndex = 0
-        } else if (Common.checkWifiType(capabilities) == "WPA") {
-            Log.e("NETWORK", "Configuring WPA")
-            conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN)
-            conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA)
-            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
-            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
-            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
-            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
-            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
-            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP)
-            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP)
-            conf.preSharedKey = "\"" + wifiPassword + "\""
-        } else {
-            Log.e("NETWORK", "Configuring OPEN network")
-            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
-        }
-        val wifiManager =
-            this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val networkId = wifiManager.addNetwork(conf)
-        Log.e("NETWORK", "Add result $networkId")
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        val list = wifiManager.configuredNetworks
-        for (i in list) {
-            if (i.SSID != null && i.SSID == "\"" + wifiSSID + "\"") {
-                Log.e("NETWORK", "WifiConfiguration SSID " + i.SSID)
-                val isDisconnected = wifiManager.disconnect()
-                Log.e("NETWORK", "isDisconnected : $isDisconnected")
-                val isEnabled = wifiManager.enableNetwork(i.networkId, true)
-                Log.e("NETWORK", "isEnabled : $isEnabled")
-                val isReconnected = wifiManager.reconnect()
-                Log.e("NETWORK", "isReconnected : $isReconnected")
-                break
-            }
-        }
-        //val connectionInfo: WifiInfo = wifiManager.getConnectionInfo()
-        gotoNextScreen(scanResult, wifiManager)
-    }
-
-    private fun android10andMoreVersions(
+    private fun android10andMoreVersionsWithoutOuterInternet(
         scanResult: ScanResult,
         wifiSSID: String,
         wifiPassword: String,
@@ -322,7 +278,7 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
 
             val networkRequest = NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                //.removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 //.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 //.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
                 .setNetworkSpecifier(wifiNetworkSpecifier)
@@ -332,22 +288,6 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
 
 
             val networkCallback = object : ConnectivityManager.NetworkCallback() {
-                /* override fun onAvailable(network: Network) {
-                     Log.d("NETWORK", "Network available")
-                     // To make sure that requests don't go over mobile data
-                     connectivityManager.bindProcessToNetwork(network)
-                     //unregister network callback
-                     //connectivityManager.unregisterNetworkCallback(this)
-                     gotoNextScreen(scanResult, wifiManager)
- 
-                     super.onAvailable(network)
-                 }*/
-
-                /*  override fun onUnavailable() {
-                      Log.d("NETWORK", "Network unavailable")
-                      Toast.makeText(this@MainActivity, "Network unavailable!", Toast.LENGTH_SHORT).show()
-                  }*/
-
                 override fun onAvailable(network: Network) {
                     Log.d("NETWORK", "Network available")
                     super.onAvailable(network)
@@ -356,11 +296,10 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
                     connectivityManager.bindProcessToNetwork(network)
 
                     //unregister network callback
-                    connectivityManager.unregisterNetworkCallback(this)
-                    connectivityManager.bindProcessToNetwork(null)
+                    //connectivityManager.unregisterNetworkCallback(this)
+                   // connectivityManager.bindProcessToNetwork(null)
 
                     gotoNextScreen(scanResult, wifiManager)
-
 
                 }
 
@@ -378,8 +317,8 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
                     Log.d("NETWORK", "onLost")
                     super.onLost(network)
 
-                    connectivityManager.bindProcessToNetwork(null)
-                    connectivityManager.unregisterNetworkCallback(this)
+                    //connectivityManager.bindProcessToNetwork(null)
+                    //connectivityManager.unregisterNetworkCallback(this)
                 }
 
             }
@@ -389,9 +328,10 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
             connectivityManager.registerNetworkCallback(builder.build(), networkCallback)
             //connectivityManager.registerNetworkCallback(networkRequest, networkCallback) // For listen
         }
+
     }
 
-    private fun android10SpecifiedWithOldCode(
+    private fun modifiedCodeForTargeted29(
         scanResult: ScanResult,
         wifiSSID: String,
         wifiPassword: String,
@@ -528,6 +468,81 @@ class MainActivity : AppCompatActivity(), WifiListAdapter.AdapterCallback {
             }
         }
         thread.start()
+    }
+
+    private fun android9AndPreviousVersion(
+        scanResult: ScanResult,
+        wifiSSID: String,
+        wifiPassword: String,
+        capabilities: String
+    ) {
+        val conf = WifiConfiguration()
+        conf.SSID =
+            "\"" + wifiSSID + "\"" // Please note the quotes. String should contain ssid in quotes
+        conf.status = WifiConfiguration.Status.ENABLED
+        conf.priority = 40
+
+        if (Common.checkWifiType(capabilities) == "WEP") {
+            Log.e("NETWORK", "Configuring WEP")
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+            conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN)
+            conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA)
+            conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN)
+            conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED)
+            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
+            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
+            if (wifiPassword.matches(Regex("^[0-9a-fA-F]+$"))) {
+                conf.wepKeys[0] = wifiPassword
+            } else {
+                conf.wepKeys[0] = "\"" + wifiPassword + "\""
+            }
+            conf.wepTxKeyIndex = 0
+        } else if (Common.checkWifiType(capabilities) == "WPA") {
+            Log.e("NETWORK", "Configuring WPA")
+            conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN)
+            conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA)
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
+            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
+            conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP)
+            conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP)
+            conf.preSharedKey = "\"" + wifiPassword + "\""
+        } else {
+            Log.e("NETWORK", "Configuring OPEN network")
+            conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+        }
+        val wifiManager =
+            this.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val networkId = wifiManager.addNetwork(conf)
+        Log.e("NETWORK", "Add result $networkId")
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val list = wifiManager.configuredNetworks
+        for (i in list) {
+            if (i.SSID != null && i.SSID == "\"" + wifiSSID + "\"") {
+                Log.e("NETWORK", "WifiConfiguration SSID " + i.SSID)
+                val isDisconnected = wifiManager.disconnect()
+                Log.e("NETWORK", "isDisconnected : $isDisconnected")
+                val isEnabled = wifiManager.enableNetwork(i.networkId, true)
+                Log.e("NETWORK", "isEnabled : $isEnabled")
+                val isReconnected = wifiManager.reconnect()
+                Log.e("NETWORK", "isReconnected : $isReconnected")
+                break
+            }
+        }
+        //val connectionInfo: WifiInfo = wifiManager.getConnectionInfo()
+        gotoNextScreen(scanResult, wifiManager)
     }
 
     private fun gotoNextScreen(connectedWifi: ScanResult, wifiManager: WifiManager) {
