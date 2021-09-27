@@ -10,6 +10,7 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/rootLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -46,6 +47,7 @@
                     app:srcCompat="@android:drawable/ic_menu_info_details" />
 
                 <LinearLayout
+                    android:id="@+id/clickLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
